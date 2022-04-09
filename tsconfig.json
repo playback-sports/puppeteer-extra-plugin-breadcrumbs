@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Node 14",
+    "compilerOptions": {
+        "lib": [
+            "es2021",
+            "dom"
+        ],
+        "module": "commonjs",
+        "target": "es2021",
+        "outDir": "lib",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "lib",
+        "test"
+    ]
+}
