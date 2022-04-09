@@ -2,12 +2,15 @@
     "name": "puppeteer-extra-plugin-breadcrumbs",
     "version": "1.0.0",
     "description": "A puppeteer plugin that leaves a trail of HTML page breadcrumbs",
-    "main": "src/index.ts",
+    "main": "lib/index.js",
     "repository": "https://github.com/playback-sports/puppeteer-extra-plugin-breadcrumbs",
     "author": "Tom Berger",
     "license": "MIT",
     "dependencies": {
         "puppeteer-extra-plugin": "^3.2.0"
+    },
+    "scripts": {
+        "build": "tsc"
     },
     "devDependencies": {
         "prettier": "^2.6.2",
