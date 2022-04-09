@@ -1,6 +1,6 @@
 {
     "name": "puppeteer-extra-plugin-breadcrumbs",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "A puppeteer plugin that leaves a trail of HTML page breadcrumbs",
     "main": "lib/index.js",
     "repository": "https://github.com/playback-sports/puppeteer-extra-plugin-breadcrumbs",
