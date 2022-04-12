@@ -1,6 +1,6 @@
 {
     "name": "puppeteer-extra-plugin-breadcrumbs",
-    "version": "1.0.8",
+    "version": "1.0.11",
     "description": "A puppeteer plugin that leaves a trail of HTML page breadcrumbs",
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",
@@ -17,11 +17,14 @@
         "recursive-copy": "^2.0.14"
     },
     "scripts": {
+        "clean": "rimraf dist/*",
+        "tscheck": "tsc --pretty --noEmit",
+        "prebuild": "run-s clean",
         "build": "run-s build:tsc build:rollup ambient-dts",
-        "build:tsc": "tsc --project types.tsconfig.json",
+        "build:tsc": "tsc --project tsconfig.json --module commonjs",
         "build:rollup": "rollup -c rollup.config.ts",
         "ambient-dts": "run-s ambient-dts-copy ambient-dts-fix-path",
-        "ambient-dts-copy": "copyfiles -u 1 \"types-dist/**/*.d.ts\" \"src/puppeteer-mods.d.ts\" dist && rimraf types-dist",
+        "ambient-dts-copy": "copyfiles -u 1 \"src/**/*.d.ts\" dist",
         "ambient-dts-fix-path": "replace-in-files --string='/// <reference path=\"../src/' --replacement='/// <reference path=\"../dist/' 'dist/**/*.d.ts'"
     },
     "devDependencies": {

@@ -4,21 +4,15 @@ import path from 'path';
 import copy from 'recursive-copy';
 import { PuppeteerExtraPlugin } from 'puppeteer-extra-plugin';
 import { Storage } from '@google-cloud/storage';
+import * as types from './types';
 
 import { Browser, ConnectOptions, LaunchOptions, Page, Target } from 'puppeteer';
-
-export type PluginOptions = {
-    onPageLoad: boolean;
-    diskPath: string;
-    tmpDir: string;
-    gcsBucket: string;
-};
 
 /**
  * A puppeteer plugin that leaves a trail of HTML page breadcrumbs
  */
 export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
-    constructor(opts: Partial<PluginOptions>) {
+    constructor(opts: Partial<types.PluginOptions>) {
         super(opts);
         this.debug('Initialized', this.opts);
     }
@@ -27,7 +21,7 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         return 'breadcrumbs';
     }
 
-    get defaults(): PluginOptions {
+    get defaults(): types.PluginOptions {
         return {
             onPageLoad: false,
             diskPath: '',
@@ -36,8 +30,8 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         };
     }
 
-    get opts(): PluginOptions {
-        return super.opts as PluginOptions;
+    get opts(): types.PluginOptions {
+        return super.opts as types.PluginOptions;
     }
 
     async onPluginRegistered(): Promise<void> {
@@ -198,8 +192,8 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
     };
 }
 
-const defaultExport = (options?: Partial<PluginOptions>) => {
-    return new PuppeteerExtraPluginBreadcrumbs(options || {});
+const defaultExport = (options: Partial<types.PluginOptions>): PuppeteerExtraPluginBreadcrumbs => {
+    return new PuppeteerExtraPluginBreadcrumbs(options);
 };
 
 export default defaultExport;
