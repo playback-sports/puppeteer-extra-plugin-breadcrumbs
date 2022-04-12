@@ -2,24 +2,41 @@
     "$schema": "https://json.schemastore.org/tsconfig",
     "display": "Node 14",
     "compilerOptions": {
+        "outDir": "./dist",
+        "target": "es2017",
+        "module": "es2015",
+        "moduleResolution": "node",
         "lib": [
-            "es2021",
+            "es2015",
+            "es2016",
+            "es2017",
+            "es2019",
             "dom"
         ],
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "target": "es2021",
-        "outDir": "lib",
-        "strict": true,
+        // "noResolve": true, // Important: Otherwise TS would rewrite our ambient d.ts file locations (see: yarn copy-dts) :(
+        "sourceMap": true,
+        "declaration": true,
+        "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "skipLibCheck": true,
-        "declaration": true
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "strict": false,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": false,
+        "pretty": true,
+        "stripInternal": true,
+        "types": [
+            "node"
+        ]
     },
     "include": [
-        "src/**/*.ts"
+        "src/**/*.ts",
+        "src/**/*.d.ts"
     ],
     "exclude": [
         "node_modules",
-        "lib"
+        "dist"
     ]
 }

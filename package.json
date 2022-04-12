@@ -2,22 +2,40 @@
     "name": "puppeteer-extra-plugin-breadcrumbs",
     "version": "1.0.6",
     "description": "A puppeteer plugin that leaves a trail of HTML page breadcrumbs",
-    "main": "lib/index",
-    "typings": "lib/index",
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.esm.js",
+    "typings": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
     "repository": "https://github.com/playback-sports/puppeteer-extra-plugin-breadcrumbs",
     "author": "Tom Berger",
     "license": "MIT",
     "dependencies": {
+        "@google-cloud/storage": "^5.19.0",
         "puppeteer-extra-plugin": "^3.2.0",
         "recursive-copy": "^2.0.14"
     },
     "scripts": {
-        "build": "tsc"
+        "build": "run-s build:tsc build:rollup ambient-dts",
+        "build:tsc": "tsc",
+        "build:rollup": "rollup -c rollup.config.ts",
+        "ambient-dts": "run-s ambient-dts-copy ambient-dts-fix-path",
+        "ambient-dts-copy": "copyfiles -u 1 \"types-dist/**/*.d.ts\" \"src/puppeteer-mods.d.ts\" dist && rimraf types-dist",
+        "ambient-dts-fix-path": "replace-in-files --string='/// <reference path=\"../src/' --replacement='/// <reference path=\"../dist/' 'dist/**/*.d.ts'"
     },
     "devDependencies": {
+        "copyfiles": "^2.4.1",
+        "npm-run-all": "^4.1.5",
         "prettier": "^2.6.2",
         "puppeteer": "^13.5.2",
         "puppeteer-extra": "^3.2.3",
+        "replace-in-files-cli": "^2.0.0",
+        "rimraf": "^3.0.2",
+        "rollup": "^2.70.1",
+        "rollup-plugin-node-resolve": "^5.2.0",
+        "rollup-plugin-sourcemaps": "^0.6.3",
+        "rollup-plugin-typescript2": "^0.31.2",
         "ts-node": "^10.7.0",
         "typescript": "^4.6.3"
     }

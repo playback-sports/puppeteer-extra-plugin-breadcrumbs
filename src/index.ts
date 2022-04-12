@@ -3,12 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import copy from 'recursive-copy';
 import { PuppeteerExtraPlugin } from 'puppeteer-extra-plugin';
+import { Storage } from '@google-cloud/storage';
 
 import { Browser, ConnectOptions, LaunchOptions, Page, Target } from 'puppeteer';
 
 export type PluginOptions = {
+    onPageLoad: boolean;
     diskPath: string;
     tmpDir: string;
+    gcsBucket: string;
 };
 
 /**
@@ -26,8 +29,10 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
 
     get defaults(): PluginOptions {
         return {
+            onPageLoad: false,
             diskPath: '',
             tmpDir: path.join(os.tmpdir(), 'pptr-breadcrumbs'),
+            gcsBucket: '',
         };
     }
 
@@ -61,10 +66,18 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
 
     async onPageCreated(page: Page) {
         this.debug('onPageCreated', page.url());
+        this.addCustomMethods(page);
 
-        page.on('load', async () => {
-            await this.writePageMHTMLToTempDisk(page);
-        });
+        if (this.opts.onPageLoad) {
+            page.on('load', async () => {
+                this.debug('onPageLoad', page.url());
+                try {
+                    await this.writePageMHTMLToTempDisk(page);
+                } catch (e) {
+                    console.log('caught err writePageMHTMLToTempDisk', e);
+                }
+            });
+        }
     }
 
     async onTargetCreated(target: Target): Promise<void> {
@@ -90,6 +103,10 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
             this.debug('Copied ' + results.length + ' files!');
         }
 
+        if (this.opts.gcsBucket) {
+            await this.uploadDirectoryToGCS(pageDir, this.opts.gcsBucket, targetID);
+        }
+
         fs.rmSync(pageDir, { recursive: true, force: true });
     }
 
@@ -101,9 +118,17 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         this.debug('onDisconnected');
     }
 
-    private getPageTempPath(page: Page) {
-        const targetID = page.target()._targetId;
-        return path.join(this.opts.tmpDir, targetID);
+    async addBreadcrumb(page: Page) {
+        this.debug('manual addBreadcrumb');
+        try {
+            await this.writePageMHTMLToTempDisk(page);
+        } catch (e) {
+            this.debug('caught err writePageMHTMLToTempDisk', e);
+        }
+    }
+
+    private addCustomMethods(prop: Page) {
+        prop.addBreadcrumb = async () => this.addBreadcrumb(prop);
     }
 
     private async writePageMHTMLToTempDisk(page: Page) {
@@ -111,6 +136,11 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         console.log('writePageMHTMLToTempDisk', targetID);
         const url = page.url();
         const u = new URL(url);
+        const urlPathName = u.pathname.replace(/\//g, '§');
+        console.log('urlPathName', urlPathName, typeof urlPathName);
+        if (urlPathName === 'blank') {
+            return;
+        }
 
         const cdp = await page.target().createCDPSession();
         const { data: mhtmlData } = await cdp.send('Page.captureSnapshot', { format: 'mhtml' });
@@ -121,12 +151,51 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
             fs.mkdirSync(pageDir);
         }
         const d = new Date();
-        const urlPathName = u.pathname.replace(/\//g, '_');
-        console.log('urlPathName', urlPathName, typeof urlPathName);
         const fileName = `${d.toISOString()}_${u.hostname}${urlPathName}.mhtml`;
         const htmlFilePath = path.join(pageDir, fileName);
         fs.writeFileSync(htmlFilePath, mhtmlData);
     }
+
+    private uploadDirectoryToGCS = (
+        directoryPath: string,
+        bucketName: string,
+        gcsOutputDir: string
+    ) => {
+        return new Promise((resolve, reject) => {
+            const storage = new Storage();
+
+            const getAllFiles = (dirPath: string, arrayOfFiles: string[] = []): string[] => {
+                const files = fs.readdirSync(dirPath);
+                files.forEach((file) => {
+                    if (fs.statSync(dirPath + '/' + file).isDirectory()) {
+                        arrayOfFiles = getAllFiles(dirPath + '/' + file, arrayOfFiles);
+                    } else {
+                        arrayOfFiles.push(path.join(dirPath, '/', file));
+                    }
+                });
+                return arrayOfFiles;
+            };
+
+            const allFiles = getAllFiles(directoryPath);
+
+            const uploadPromises = allFiles.map((filePath) => {
+                let destination = path.join(gcsOutputDir, path.relative(directoryPath, filePath));
+                // If running on Windows
+                if (process.platform === 'win32') {
+                    destination = destination.replace(/\\/g, '/');
+                }
+
+                let uploadOpts = {
+                    destination: destination,
+                    configPath: path.join(this.opts.tmpDir, 'node_gcs_upload.config'),
+                };
+
+                return storage.bucket(bucketName).upload(filePath, uploadOpts);
+            });
+
+            Promise.all(uploadPromises).then(resolve).catch(reject);
+        });
+    };
 }
 
 const defaultExport = (options?: Partial<PluginOptions>) => {
