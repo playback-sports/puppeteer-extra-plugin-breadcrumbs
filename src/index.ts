@@ -8,6 +8,62 @@ import * as types from './types';
 
 import { Browser, ConnectOptions, LaunchOptions, Page, Target } from 'puppeteer';
 
+export type BreadcrumbInfo = {
+    filename: string;
+    customName: string;
+    url: string;
+    date: Date;
+};
+
+export const parseBreadcrumbInfoFilename = (filename: string): BreadcrumbInfo => {
+    const split1 = filename.split(/§(.*)/s);
+    if (split1.length < 2) {
+        throw new Error('breadcrumb filename malformed');
+    }
+
+    const url = split1[1].replace(/§/g, '/');
+    const split2 = split1[0].split(/_(.*)/s);
+
+    if (!split2.length) {
+        throw new Error('breadcrumb filename malformed');
+    }
+    let isoTime = split2[0];
+    const date = new Date(isoTime);
+    let customName = '';
+    if (split2.length > 1) {
+        customName = split2[1];
+    }
+    // const dateStr = date.toLocaleTimeString('en-US', {
+    //     year: '2-digit',
+    //     month: 'numeric',
+    //     day: 'numeric',
+    //     hour: 'numeric',
+    //     minute: 'numeric',
+    //     second: '2-digit',
+    // });
+    return {
+        filename,
+        customName,
+        url,
+        date,
+    };
+};
+
+export const convertUrlToFilename = (url: string): string => {
+    const u = new URL(url);
+    const urlPathName = u.pathname.replace(/\//g, '§');
+    return urlPathName;
+};
+
+export const convertBreadcrumbInfoToFilename = (
+    date: Date,
+    url: string,
+    customName: string = ''
+) => {
+    const _customName = customName ? `_${customName}` : '';
+    return `${date.toISOString()}${_customName}§${convertUrlToFilename(url)}.mhtml`;
+};
+
 /**
  * A puppeteer plugin that leaves a trail of HTML page breadcrumbs
  */
@@ -112,10 +168,10 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         this.debug('onDisconnected');
     }
 
-    async addBreadcrumb(page: Page) {
-        this.debug('manual addBreadcrumb');
+    async addBreadcrumb(page: Page, name: string = '') {
+        this.debug('manual addBreadcrumb!');
         try {
-            await this.writePageMHTMLToTempDisk(page);
+            await this.writePageMHTMLToTempDisk(page, name);
         } catch (e) {
             this.debug('caught err writePageMHTMLToTempDisk', e);
         }
@@ -125,14 +181,10 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         prop.addBreadcrumb = async () => this.addBreadcrumb(prop);
     }
 
-    private async writePageMHTMLToTempDisk(page: Page) {
+    private async writePageMHTMLToTempDisk(page: Page, name: string = '') {
         const targetID = page.target()._targetId;
         console.log('writePageMHTMLToTempDisk', targetID);
-        const url = page.url();
-        const u = new URL(url);
-        const urlPathName = u.pathname.replace(/\//g, '§');
-        console.log('urlPathName', urlPathName, typeof urlPathName);
-        if (urlPathName === 'blank') {
+        if (page.url() === 'blank') {
             return;
         }
 
@@ -144,8 +196,9 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         if (!fs.existsSync(pageDir)) {
             fs.mkdirSync(pageDir);
         }
+
         const d = new Date();
-        const fileName = `${d.toISOString()}_${u.hostname}${urlPathName}.mhtml`;
+        const fileName = convertBreadcrumbInfoToFilename(d, page.url(), name);
         const htmlFilePath = path.join(pageDir, fileName);
         fs.writeFileSync(htmlFilePath, mhtmlData);
     }
