@@ -9,13 +9,22 @@ import * as types from './types';
 import { Browser, ConnectOptions, LaunchOptions, Page, Target } from 'puppeteer';
 
 export type BreadcrumbInfo = {
+    targetID: string;
     filename: string;
     customName: string;
     url: string;
     date: Date;
 };
 
-export const parseBreadcrumbInfoFilename = (filename: string): BreadcrumbInfo => {
+export const parseBreadcrumbInfoFilepath = (filepath: string): BreadcrumbInfo => {
+    const pathSplit = filepath.split('/');
+    if (pathSplit.length != 2) {
+        throw new Error('breadcrumb filepath malformed');
+    }
+
+    const targetID = pathSplit[0];
+    const filename = pathSplit[1];
+
     const split1 = filename.split(/§(.*)/s);
     if (split1.length < 2) {
         throw new Error('breadcrumb filename malformed');
@@ -33,15 +42,9 @@ export const parseBreadcrumbInfoFilename = (filename: string): BreadcrumbInfo =>
     if (split2.length > 1) {
         customName = split2[1];
     }
-    // const dateStr = date.toLocaleTimeString('en-US', {
-    //     year: '2-digit',
-    //     month: 'numeric',
-    //     day: 'numeric',
-    //     hour: 'numeric',
-    //     minute: 'numeric',
-    //     second: '2-digit',
-    // });
+
     return {
+        targetID,
         filename,
         customName,
         url,
@@ -49,19 +52,23 @@ export const parseBreadcrumbInfoFilename = (filename: string): BreadcrumbInfo =>
     };
 };
 
-export const convertUrlToFilename = (url: string): string => {
+const convertUrlToFilename = (url: string): string => {
     const u = new URL(url);
     const urlPathName = u.pathname.replace(/\//g, '§');
     return urlPathName;
 };
 
-export const convertBreadcrumbInfoToFilename = (
+export const convertBreadcrumbInfoToFilepath = (
+    targetID: string,
     date: Date,
     url: string,
     customName: string = ''
 ) => {
     const _customName = customName ? `_${customName}` : '';
-    return `${date.toISOString()}${_customName}§${convertUrlToFilename(url)}.mhtml`;
+    return path.join(
+        targetID,
+        `${date.toISOString()}${_customName}§${convertUrlToFilename(url)}.mhtml`
+    );
 };
 
 /**
@@ -198,9 +205,8 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         }
 
         const d = new Date();
-        const fileName = convertBreadcrumbInfoToFilename(d, page.url(), name);
-        const htmlFilePath = path.join(pageDir, fileName);
-        fs.writeFileSync(htmlFilePath, mhtmlData);
+        const mhtmlFilePath = convertBreadcrumbInfoToFilepath(targetID, d, page.url(), name);
+        fs.writeFileSync(path.join(this.opts.tmpDir, mhtmlFilePath), mhtmlData);
     }
 
     private uploadDirectoryToGCS = (
