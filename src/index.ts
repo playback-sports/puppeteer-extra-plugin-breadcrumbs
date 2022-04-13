@@ -176,21 +176,30 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         this.debug('onDisconnected');
     }
 
-    async breadcrumb(page: Page, name: string = '') {
+    async breadcrumb(page: Page, name: string = '', targetOverride: string = '') {
         this.debug('manual breadcrumb!');
         try {
-            await this.writePageMHTMLToTempDisk(page, name);
+            await this.writePageMHTMLToTempDisk(page, name, targetOverride);
         } catch (e) {
             this.debug('caught err writePageMHTMLToTempDisk', e);
         }
     }
 
     private addCustomMethods(prop: Page) {
-        prop.breadcrumb = async (name: string = '') => this.breadcrumb(prop, name);
+        prop.breadcrumb = async (name: string = '', targetOverride: string = '') =>
+            this.breadcrumb(prop, name, targetOverride);
     }
 
-    private async writePageMHTMLToTempDisk(page: Page, name: string = '') {
-        const targetID = page.target()._targetId;
+    private async writePageMHTMLToTempDisk(
+        page: Page,
+        name: string = '',
+        targetOverride: string = ''
+    ) {
+        let targetID = page.target()._targetId;
+        if (targetOverride) {
+            console.log('got target override', targetOverride);
+            targetID = targetOverride;
+        }
         console.log('writePageMHTMLToTempDisk', targetID);
         if (page.url() === 'blank') {
             return;
