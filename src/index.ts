@@ -54,8 +54,9 @@ export const parseBreadcrumbInfoFilepath = (filepath: string): BreadcrumbInfo =>
 
 const convertUrlToFilename = (url: string): string => {
     const u = new URL(url);
-    const urlPathName = u.pathname.replace(/\//g, '§');
-    return urlPathName;
+    const desiredURL = `${u.hostname}${u.pathname}`;
+    const desiredFilename = desiredURL.replace(/\//g, '§');
+    return desiredFilename;
 };
 
 export const convertBreadcrumbInfoToFilepath = (
