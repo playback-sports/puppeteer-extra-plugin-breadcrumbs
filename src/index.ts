@@ -176,8 +176,8 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
         this.debug('onDisconnected');
     }
 
-    async addBreadcrumb(page: Page, name: string = '') {
-        this.debug('manual addBreadcrumb!');
+    async breadcrumb(page: Page, name: string = '') {
+        this.debug('manual breadcrumb!');
         try {
             await this.writePageMHTMLToTempDisk(page, name);
         } catch (e) {
@@ -186,7 +186,7 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
     }
 
     private addCustomMethods(prop: Page) {
-        prop.addBreadcrumb = async () => this.addBreadcrumb(prop);
+        prop.breadcrumb = async (name: string = '') => this.breadcrumb(prop, name);
     }
 
     private async writePageMHTMLToTempDisk(page: Page, name: string = '') {

@@ -3,7 +3,7 @@
 // Warn: The above is EXTREMELY important for our custom page mods to be recognized by the end users typescript!
 
 export type BreadcrumbsPluginPageAdditions = {
-    addBreadcrumb: () => Promise<void>;
+    breadcrumb: (name: string) => Promise<void>;
 };
 
 export interface PluginOptions {
