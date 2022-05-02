@@ -132,7 +132,7 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
                 try {
                     await this.writePageMHTMLToTempDisk(page);
                 } catch (e) {
-                    console.log('caught err writePageMHTMLToTempDisk', e);
+                    console.error('pptr-breadcrumbs error writePageMHTMLToTempDisk', e);
                 }
             });
         }
@@ -197,10 +197,10 @@ export class PuppeteerExtraPluginBreadcrumbs extends PuppeteerExtraPlugin {
     ) {
         let targetID = page.target()._targetId;
         if (targetOverride) {
-            console.log('got target override', targetOverride);
+            // console.log('got target override', targetOverride);
             targetID = targetOverride;
         }
-        console.log('writePageMHTMLToTempDisk', targetID);
+        // console.log('writePageMHTMLToTempDisk', targetID);
         if (page.url() === 'blank') {
             return;
         }
